@@ -1,4 +1,5 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { ChartConfig, ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
 
 import { Cell, Pie, PieChart, ResponsiveContainer } from "recharts";
 import colors from "tailwindcss/colors";
@@ -16,6 +17,21 @@ export function PopularProducts() {
     colors.rose[500],
     colors.amber[500]
   ]
+  
+  const chartConfig = {
+    Pepperoni: {
+      label: "Pepperoni",
+    },
+    Toscana: {
+      label: "Toscana",
+    },
+    Calabresa: {
+      label: "Calabresa",
+    },
+    Mussarela: {
+      label: "Mussarela",
+    },
+  } satisfies ChartConfig
   return (
     <Card className="bg-transparent col-span-3">
       <CardHeader>
@@ -23,19 +39,22 @@ export function PopularProducts() {
           <span>Pedidos populares</span>
         </CardTitle>
       </CardHeader>
-      <CardContent>
-        <ResponsiveContainer width="100%" height={240}>
+      <CardContent >
+      <ChartContainer
+          config={chartConfig}
+          className="mx-auto aspect-square max-h-[250px] px-0 w-[500px]"
+        >
           <PieChart>
+            <ChartTooltip
+              content={<ChartTooltipContent nameKey="product" hideLabel />}
+            />
             <Pie
               data={data}
               dataKey="amount"
-              nameKey="product"
-              cx="50%"
-              cy="50%"
+              labelLine={false}
               outerRadius={86}
               innerRadius={64}
               strokeWidth={8}
-              labelLine={false}
               label={({
                 cx,
                 cy,
@@ -75,9 +94,9 @@ export function PopularProducts() {
                />
               )
             })}
-            </Pie>
+          </Pie>
           </PieChart>
-        </ResponsiveContainer>
+        </ChartContainer>
       </CardContent>
     </Card>
   );
