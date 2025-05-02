@@ -18,6 +18,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Pagination } from "@/components/pagination";
+import { MoreDetailsComponent } from "./components/moreDetails";
 export function OrderPage() {
   return (
     <div className="p-8 flex flex-col gap-4 w-full">
@@ -67,10 +68,7 @@ export function OrderPage() {
                 return (
                   <TableRow key={i}>
                     <TableCell>
-                      <Button variant="outline">
-                        <MagnifyingGlass weight="bold" />
-                        <span className="sr-only">Mais detalhes</span>
-                      </Button>
+                      <MoreDetailsComponent/>
                     </TableCell>
                     <TableCell>458fgdfngfdjsuy895</TableCell>
                     <TableCell>14h</TableCell>
