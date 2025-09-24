@@ -5,20 +5,31 @@ import { useForm } from 'react-hook-form'
 import { zodResolver }  from '@hookform/resolvers/zod'
 import * as z from 'zod'
 import { toast } from "sonner";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
+import { useMutation } from "@tanstack/react-query";
+import { signIn } from "@/api/sign-in";
 
 const SchemaValidationForm = z.object({
     email: z.string().email().min(1, 'e-mail obrigatório')
 })
 
 export function SignIn() {
+    const [ searchParams ] = useSearchParams() 
     type TypeSchemaValidation = z.infer<typeof SchemaValidationForm>
     const { register, handleSubmit, formState:{isSubmitting} } = useForm<TypeSchemaValidation>({
-        resolver: zodResolver(SchemaValidationForm)
+        resolver: zodResolver(SchemaValidationForm),
+        defaultValues: {
+          email: searchParams.get('email') ?? ''
+        }
     })
+
+    const {mutateAsync: authenticate} = useMutation({
+      mutationFn: signIn,
+      
+    })
+
     async function handleSignIn(data: TypeSchemaValidation){
-        console.log(data)
-        await new Promise(resolve => setTimeout(resolve, 2000))
+        await authenticate({email: data.email})
         toast.success('Enviamos um link de autenticação para o seu e-mail')
     }
     return (

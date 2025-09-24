@@ -19,7 +19,42 @@ import {
 } from "@/components/ui/select";
 import { Pagination } from "@/components/pagination";
 import { MoreDetailsComponent } from "./components/moreDetails";
+import { useQuery } from "@tanstack/react-query";
+import { getOrders } from "@/api/get-orders";
+import { useSearchParams } from "react-router-dom";
+import z from "zod";
+import { formatDistanceToNow } from "date-fns";
+import { ptBR } from "date-fns/locale";
+
+export interface OrderTableRowProps {
+  orders: {
+    orderId: string;
+    createdAt: Date;
+    status: "pending" | "canceled" | "processing" | "delivering" | "delivered";
+    customerName: string;
+    total: number;
+  }[];
+}
+
 export function OrderPage() {
+
+  const [searchParams, setSearchParams] = useSearchParams()
+  const pageIndex = z.coerce.number()
+    .transform((page) => page - 1)
+    .parse(searchParams.get('page') ?? "1")
+
+  const { data: result } = useQuery({
+    queryKey: ['orders', pageIndex],
+    queryFn: () => getOrders({ pageIndex })
+  })
+
+  function handlePaginate(pageIndex: number){
+    setSearchParams((prev) => {
+      prev.set('page', (pageIndex + 1).toString())
+      return prev
+    })
+  }
+
   return (
     <div className="p-8 flex flex-col gap-4 w-full">
       <div>
@@ -64,44 +99,49 @@ export function OrderPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {Array.from({ length: 10 }).map((_, i) => {
-                return (
-                  <TableRow key={i}>
-                    <TableCell>
-                      <MoreDetailsComponent/>
-                    </TableCell>
-                    <TableCell>458fgdfngfdjsuy895</TableCell>
-                    <TableCell>14h</TableCell>
-                    <TableCell className="flex items-center gap-2 mt-2">
-                      <span className="rounded-full bg-muted-foreground w-2 h-2" />
-                      <span>Pendente</span>
-                    </TableCell>
-                    <TableCell>
-                      <span>José ítalo Ferreira</span>
-                    </TableCell>
-                    <TableCell>R$ 149,00</TableCell>
-                    <TableCell>
-                      <Button
-                        variant="outline"
-                        className="flex items-center gap-2"
-                      >
-                        Aprovar
-                        <CaretRight />
-                      </Button>
-                    </TableCell>
-                    <TableCell>
-                      <Button className="flex items-center gap-2">
-                        <CaretRight />
-                        cancelar
-                      </Button>
-                    </TableCell>
-                  </TableRow>
-                );
-              })}
+              {result?.orders?.map((order) => (
+                <TableRow key={order.orderId}>
+                  <TableCell>
+                    <MoreDetailsComponent order={order} />
+                  </TableCell>
+                  <TableCell>{order.orderId}</TableCell>
+                  <TableCell>
+                    {formatDistanceToNow(new Date(order.createdAt), { addSuffix: true, locale: ptBR })}
+                  </TableCell>
+                  <TableCell className="flex items-center gap-2 mt-2">
+                    <span className="rounded-full bg-muted-foreground w-2 h-2" />
+                    <span>{order.status}</span>
+                  </TableCell>
+                  <TableCell>
+                    <span>{order.customerName}</span>
+                  </TableCell>
+                  <TableCell> {new Intl.NumberFormat("pt-BR", {
+                    style: "currency",
+                    currency: "BRL",
+                  }).format(order.total)}</TableCell>
+                  <TableCell>
+                    <Button variant="outline" className="flex items-center gap-2">
+                      Aprovar
+                      <CaretRight />
+                    </Button>
+                  </TableCell>
+                  <TableCell>
+                    <Button className="flex items-center gap-2">
+                      <CaretRight />
+                      Cancelar
+                    </Button>
+                  </TableCell>
+                </TableRow>
+              ))}
             </TableBody>
           </Table>
         </div>
-           <Pagination pageIndex={1} itemsCount={105} perPage={10}/>
+          {result && (
+             <Pagination
+             onPageChange={handlePaginate}
+              pageIndex={result.meta.pageIndex}
+             itemsCount={result.meta.totalCount} perPage={result.meta.perPage} />
+          )}
       </div>
     </div>
   );

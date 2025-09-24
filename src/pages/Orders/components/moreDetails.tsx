@@ -1,3 +1,4 @@
+import { OrderStatus } from "@/components/order-status";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -10,7 +11,19 @@ import {
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { MagnifyingGlass } from "phosphor-react";
 
-export function MoreDetailsComponent() {
+
+export interface Order {
+  orderId: string;
+  createdAt: Date;
+  status: "pending" | "canceled" | "processing" | "delivering" | "delivered";
+  customerName: string;
+  total: number;
+}
+
+interface MoreDetailsProps {
+  order: Order;
+}
+export function MoreDetailsComponent({ order }: MoreDetailsProps) {
   return (
     <Dialog>
       <DialogTrigger>
@@ -22,7 +35,7 @@ export function MoreDetailsComponent() {
       <DialogContent className="w-[400px]">
         <DialogHeader>
           <DialogTitle className="flex flex-col gap-1 mb-4">
-            <h3 className="text-[18px]">Pedido: 183495nifg8945w9</h3>
+            <h3 className="text-[18px]">Pedido: {order.orderId}</h3>
             <span className="text-sm text-muted-foreground">
               Detalhes do pedido
             </span>
@@ -31,33 +44,25 @@ export function MoreDetailsComponent() {
             <div className="flex flex-col gap-4">
               <div className="flex items-center justify-between pb-3 border-b border-zinc-600">
                 <span className="font-semibold text-foreground dark:text-muted-foreground">Status</span>
-                <div className="flex items-center gap-2">
-                  <span className="rounded-full bg-zinc-400 h-2 w-2" />
-                  <span className="text-muted-foreground">Pendente</span>
-                </div>
+                <OrderStatus status={order.status} />
               </div>
               <div className="flex items-center justify-between pb-3 border-b border-zinc-600">
                 <span className="font-semibold text-foreground dark:text-muted-foreground">Cliente</span>
                 <span className="text-muted-foreground dark:text-foreground font-semibold">
-                  José Ítalo
+                  {order.customerName}
                 </span>
               </div>
-              <div className="flex items-center justify-between pb-3 border-b border-zinc-600">
-                <span className="font-semibold text-foreground dark:text-muted-foreground">Telefone</span>
-                <span className="text-muted-foreground dark:text-foreground font-semibold">
-                  (99) 99999-9999
-                </span>
-              </div>
-              <div className="flex items-center justify-between pb-3 border-b border-zinc-600">
-                <span className="font-semibold text-foreground dark:text-muted-foreground">E-mail</span>
-                <span className="text-muted-foreground dark:text-foreground font-semibold">
-                  gfogfj@gmail.com
-                </span>
-              </div>
+
+
               <div className="flex items-center justify-between">
                 <span className="font-semibold text-foreground dark:text-muted-foreground">Realizdo há</span>
                 <span className="text-muted-foreground dark:text-foreground font-semibold">
-                  há 3 minutos
+                  <TableCell>
+                    {new Date(order.createdAt).toLocaleString("pt-BR", {
+                      dateStyle: "short",
+                      timeStyle: "short",
+                    })}
+                  </TableCell>
                 </span>
               </div>
             </div>

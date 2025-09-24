@@ -5,11 +5,13 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { toast } from "sonner";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
+import { useMutation } from "@tanstack/react-query";
+import { registerRestaurant } from "@/api/register-restaurant";
 
 const SchemaValidationForm = z.object({
   restaurantName: z.string().min(1, "nome do restaurante obrigatório"),
-  menagerName: z.string().min(1, "nome obrigatório"),
+  managerName: z.string().min(1, "nome obrigatório"),
   email: z.string().email().min(1, "e-mail obrigatório"),
   phone: z.string(),
 });
@@ -23,10 +25,27 @@ export function SignUp() {
   } = useForm<TypeSchemaValidation>({
     resolver: zodResolver(SchemaValidationForm),
   });
-  async function handleSignIn(data: TypeSchemaValidation) {
-    console.log(data);
-    await new Promise((resolve) => setTimeout(resolve, 2000));
-    toast.success("Restaurante cadastrado com sucesso!");
+
+  const navigate = useNavigate()
+  const { mutateAsync: registerRestaurantFN } = useMutation({
+    mutationFn: registerRestaurant
+  })
+
+  async function handleSignUp(data: TypeSchemaValidation) {
+    try{await registerRestaurantFN({
+      restaurantName: data.restaurantName,
+      managerName: data.managerName,
+      email: data.email,
+      phone: data.phone,
+    })
+    toast.success("Restaurante cadastrado com sucesso!", {
+      action: {
+        label: 'login',
+        onClick: () => navigate(`/auth/signin?email=${data.email}`)
+      }
+    })}catch(err){
+      console.log(err)
+    };
   }
   return (
     <div className="flex items-center justify-center min-h-screen">
@@ -44,7 +63,7 @@ export function SignUp() {
             Cadastre-se e seja nosso parceiro
           </span>
         </div>
-        <form className="space-y-4" onSubmit={handleSubmit(handleSignIn)}>
+        <form className="space-y-4" onSubmit={handleSubmit(handleSignUp)}>
           <div>
             <Label className="text-sm font-semibold" htmlFor="email">
               Nome do restaurante
@@ -59,7 +78,7 @@ export function SignUp() {
             <Label className="text-sm font-semibold" htmlFor="email">
               Seu nome
             </Label>
-            <Input id="text" {...register("menagerName")} type="text" />
+            <Input id="text" {...register("managerName")} type="text" />
           </div>
           <div>
             <Label className="text-sm font-semibold" htmlFor="email">
