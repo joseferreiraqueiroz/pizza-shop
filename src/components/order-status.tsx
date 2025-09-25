@@ -1,5 +1,5 @@
 type orderStatus =
-    | 'pending'
+    'pending'
     | 'canceled'
     | 'processing'
     | 'delivering'

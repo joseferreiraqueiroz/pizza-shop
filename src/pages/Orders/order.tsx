@@ -18,13 +18,16 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Pagination } from "@/components/pagination";
-import { MoreDetailsComponent } from "./components/moreDetails";
+import { MoreDetailsComponent, Order } from "./components/moreDetails";
 import { useQuery } from "@tanstack/react-query";
 import { getOrders } from "@/api/get-orders";
 import { useSearchParams } from "react-router-dom";
 import z from "zod";
 import { formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { OrderStatus } from "@/components/order-status";
+import { Controller, useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
 
 export interface OrderTableRowProps {
   orders: {
@@ -36,16 +39,83 @@ export interface OrderTableRowProps {
   }[];
 }
 
+
+
+  const orderFilterSchema = z.object({
+    orderId: z.string().optional(),
+    customerName: z.string().optional(),
+    status: z.string().optional()
+  })
+
+  type OrderFilterSchema = z.infer<typeof orderFilterSchema>
+
 export function OrderPage() {
 
   const [searchParams, setSearchParams] = useSearchParams()
+  const orderId = searchParams.get('orderId')
+  const customerName = searchParams.get('customerName')
+  const status = searchParams.get('status')
+
+
+  const { register, handleSubmit, control, reset } = useForm<OrderFilterSchema>({
+    resolver: zodResolver(orderFilterSchema),
+    defaultValues: {
+      orderId: orderId ?? '',
+      customerName: customerName ?? '',
+      status: customerName ?? 'all'
+    }
+  })
+
+  function handleFilter({orderId, customerName, status}: OrderFilterSchema){
+    setSearchParams(state => {
+      if(orderId){
+        state.set('orderId', orderId)
+      }
+      else{
+        state.delete('orderId')
+      }
+        if(customerName){
+        state.set('customerName', customerName)
+      }
+      else{
+        state.delete('customerName')
+      }
+        if(status){
+        state.set('status', status)
+      }
+      else{
+        state.delete('status')
+      }
+      state.set('page', '1')
+      return state
+    })
+  }
+
+  function handleClearFilter(){
+    setSearchParams(state => {
+      state.delete('orderId')
+      state.delete('customerName')
+      state.delete('status')
+      state.delete('page', '1')
+      
+      return state
+    })
+    
+    reset({
+      orderId: '',
+      customerName: '',
+      status: 'all'
+    })
+
+  }
+
   const pageIndex = z.coerce.number()
     .transform((page) => page - 1)
     .parse(searchParams.get('page') ?? "1")
 
   const { data: result } = useQuery({
-    queryKey: ['orders', pageIndex],
-    queryFn: () => getOrders({ pageIndex })
+    queryKey: ['orders', pageIndex, orderId, customerName, status],
+    queryFn: () => getOrders({ pageIndex, orderId, customerName, status: status === "all" ? null : status })
   })
 
   function handlePaginate(pageIndex: number){
@@ -61,25 +131,40 @@ export function OrderPage() {
         <h1 className="tracking-tight text-2xl font-semibold">Pedidos</h1>
       </div>
       <div className="w-full">
-        <form className="flex items-center gap-2">
+        <form onSubmit={handleSubmit(handleFilter)} className="flex items-center gap-2">
           <Label>Filtros:</Label>
-          <Input placeholder="Id do pedido" className="w-[180px]" />
-          <Input placeholder="Nome do cliente" className="w-[320px]" />
-          <Select>
+          <Input placeholder="Id do pedido" className="w-[180px]" {...register("orderId")}/>
+          <Input placeholder="Nome do cliente" className="w-[320px]" {...register("customerName")}/>
+         <Controller 
+         name="status"
+         control={control}
+         render={({field: {name, onChange, value, disabled}}) => {
+          return (
+             <Select defaultValue="all" name={name} onValueChange={onChange} value={value} disabled={disabled}>
             <SelectTrigger className="w-[180px]">
               <SelectValue placeholder="Todos status" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="light">Em preparo</SelectItem>
-              <SelectItem value="dark">Em entrega</SelectItem>
-              <SelectItem value="system">Entregue</SelectItem>
+              <SelectItem value="all">Todos status</SelectItem>
+              <SelectItem value="pending">Pendente</SelectItem>
+               <SelectItem value="canceled">Cancelado</SelectItem>
+              
+              <SelectItem value="processing">Em preparo</SelectItem>
+              <SelectItem value="delivering">Em entrega</SelectItem>
+              <SelectItem value="delivered">Entregue</SelectItem>
             </SelectContent>
           </Select>
-          <Button variant="secondary">
+          )
+         }}
+         >
+
+
+         </Controller>
+          <Button type="submit" variant="secondary">
             <MagnifyingGlass size={20} weight="bold" />
             Filtrar resultados
           </Button>
-          <Button variant="ghost">
+          <Button type="button" variant="ghost" onClick={() => handleClearFilter()}>
             <X size={20} weight="bold" />
             Cancelar filtros
           </Button>
@@ -109,8 +194,8 @@ export function OrderPage() {
                     {formatDistanceToNow(new Date(order.createdAt), { addSuffix: true, locale: ptBR })}
                   </TableCell>
                   <TableCell className="flex items-center gap-2 mt-2">
-                    <span className="rounded-full bg-muted-foreground w-2 h-2" />
-                    <span>{order.status}</span>
+                  
+                    <span><OrderStatus status={order.status}/></span>
                   </TableCell>
                   <TableCell>
                     <span>{order.customerName}</span>
